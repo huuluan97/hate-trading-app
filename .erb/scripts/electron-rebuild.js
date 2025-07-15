@@ -1,7 +1,9 @@
 import { execSync } from 'child_process';
 import fs from 'fs';
-import { dependencies } from '../../release/app/package.json';
 import webpackPaths from '../configs/webpack.paths';
+
+const packagePath = require.resolve('../../release/app/package.json');
+const { dependencies } = require(packagePath);
 
 if (
   Object.keys(dependencies || {}).length > 0 &&

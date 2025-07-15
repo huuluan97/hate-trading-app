@@ -28,6 +28,7 @@ const CRYPTO_IDS = [
 class PriceService {
   private priceCache: Map<string, { data: CryptoPrice; timestamp: number }> =
     new Map();
+
   private cacheTimeout = 30000;
 
   async getPrices(cryptoIds: string[] = CRYPTO_IDS): Promise<CryptoPrice[]> {
@@ -90,7 +91,7 @@ class PriceService {
     return cached;
   }
 
-  getSymbolToId(symbol: string): string {
+  static getSymbolToId(symbol: string): string {
     const mapping: Record<string, string> = {
       ETH: 'ethereum',
       BTC: 'bitcoin',
@@ -113,7 +114,7 @@ class PriceService {
   }
 
   async getTokenValueUSD(symbol: string, amount: number): Promise<number> {
-    const coinId = this.getSymbolToId(symbol);
+    const coinId = PriceService.getSymbolToId(symbol);
     const priceData = await this.getPrice(coinId);
 
     if (priceData) {

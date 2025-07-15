@@ -116,7 +116,7 @@ class Web3Service {
     retries: number = this.connectionRetryCount,
     delay: number = this.connectionRetryDelay,
   ): Promise<T> {
-    let lastError: Error;
+    let lastError: Error | undefined;
 
     for (let i = 0; i < retries; i += 1) {
       try {
@@ -135,7 +135,7 @@ class Web3Service {
         });
       }
     }
-    throw lastError!;
+    throw lastError || new Error('Operation failed after retries');
   }
 
   async validateTokenContract(
@@ -784,7 +784,7 @@ class Web3Service {
     priceImpact: string;
   }> {
     const network = getNetworkInfo(networkKey || this.currentNetwork);
-    const chainId = parseInt(network.chainId.toString());
+    const chainId = parseInt(network.chainId.toString(), 10);
 
     // Map our chain IDs to 1inch supported chains
     const chainMapping: { [key: number]: number } = {
@@ -836,15 +836,15 @@ class Web3Service {
     toToken: string,
     amount: string,
     decimals: number,
-    slippage: number = 1,
     networkKey?: string,
+    slippage: number = 1,
   ): Promise<string> {
     if (!this.signer) {
       throw new Error('No wallet connected for swapping');
     }
 
     const network = getNetworkInfo(networkKey || this.currentNetwork);
-    const chainId = parseInt(network.chainId.toString());
+    const chainId = parseInt(network.chainId.toString(), 10);
 
     const chainMapping: { [key: number]: number } = {
       1: 1, // Ethereum
@@ -961,27 +961,21 @@ class Web3Service {
       const latestBlock = await provider.getBlockNumber();
       const fromBlock = Math.max(0, latestBlock - 1000); // Last 1000 blocks
 
-      // Create filter for all transactions involving this address
-      const filter = {
-        fromBlock,
-        toBlock: latestBlock,
-        address: checksumAddress,
-      };
-
-      // Get transaction logs
-      const logs = await provider.getLogs(filter);
+      // TODO: Process transaction logs for token transfers
+      // const filter = { fromBlock, toBlock: latestBlock, address: checksumAddress };
+      // const logs = await provider.getLogs(filter);
 
       // Get regular transactions (sent/received)
       const transactions = [];
 
       // Process recent blocks to find transactions
-      for (let i = 0; i < Math.min(100, latestBlock - fromBlock); i++) {
+      for (let i = 0; i < Math.min(100, latestBlock - fromBlock); i += 1) {
         const blockNumber = latestBlock - i;
         try {
           const block = await provider.getBlock(blockNumber, true);
           if (block && block.transactions) {
             for (const tx of block.transactions) {
-              if (typeof tx === 'object' && tx.hash) {
+              if (typeof tx === 'object' && tx && 'hash' in tx) {
                 const txObj = tx as any;
                 if (
                   txObj.from === checksumAddress ||
